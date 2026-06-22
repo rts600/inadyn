@@ -1,0 +1,44 @@
+name: Build arm64
+
+on:
+  push:
+    branches: [ "*" ]
+  workflow_dispatch:
+
+jobs:
+  build-arm64-alpine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: uraimo/run-on-arch-action@v2
+        name: Build static arm64 binary
+        with:
+          arch: aarch64
+          distro: alpine_latest
+          run: |
+            apk update
+            apk add build-base pkgconf autoconf automake libtool openssl-dev openssl-libs-static linux-headers wget
+            
+            # Build libconfuse statically
+            wget https://github.com/martinh/libconfuse/releases/download/v3.3/confuse-3.3.tar.xz
+            tar xf confuse-3.3.tar.xz
+            cd confuse-3.3
+            ./configure --enable-static --disable-shared
+            make -j$(nproc)
+            make install
+            cd ..
+            
+            # Build inadyn statically
+            ./autogen.sh
+            ./configure --enable-openssl --enable-reduced CFLAGS="-Os" LDFLAGS="-static -s" PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
+            make -j$(nproc)
+            
+            mkdir -p output
+            cp src/inadyn output/
+            strip output/inadyn
+            
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inadyn-arm64-static
+          path: output/inadyn
