@@ -17,26 +17,30 @@ jobs:
           arch: aarch64
           distro: alpine_latest
           run: |
+            set -ex
             apk update
-            apk add build-base pkgconf autoconf automake libtool openssl-dev openssl-libs-static linux-headers wget
+            # openssl-libs-static may not exist in some alpine versions, openssl-dev is usually enough
+            apk add build-base pkgconf autoconf automake libtool openssl-dev linux-headers curl ca-certificates tar
             
-            # Build libconfuse statically
-            wget https://github.com/martinh/libconfuse/releases/download/v3.3/confuse-3.3.tar.xz
-            tar xf confuse-3.3.tar.xz
+            # Build libconfuse statically (use curl and tar.gz to avoid missing xz/wget TLS issues)
+            curl -LO https://github.com/martinh/libconfuse/releases/download/v3.3/confuse-3.3.tar.gz
+            tar xzf confuse-3.3.tar.gz
             cd confuse-3.3
             ./configure --enable-static --disable-shared
-            make -j$(nproc)
+            make -j4
             make install
             cd ..
             
             # Build inadyn statically
             ./autogen.sh
+            export PKG_CONFIG="pkgconf --static"
             ./configure --enable-openssl --enable-reduced CFLAGS="-Os" LDFLAGS="-static -s" PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
-            make -j$(nproc)
+            
+            # Output build log for debugging if it fails
+            make -j4 V=1
             
             mkdir -p output
             cp src/inadyn output/
-            strip output/inadyn
             
       - uses: actions/upload-artifact@v4
         with:
