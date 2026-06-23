@@ -18,7 +18,7 @@ jobs:
         name: Build static arm64 binary
         with:
           arch: aarch64
-          distro: alpine_latest
+          distro: alpine_3.18
           run: |
             set -ex
             apk update
