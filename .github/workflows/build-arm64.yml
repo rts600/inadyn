@@ -5,6 +5,9 @@ on:
     branches: [ "*" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-arm64-alpine:
     runs-on: ubuntu-latest
@@ -53,3 +56,26 @@ jobs:
         with:
           name: inadyn-arm64-static
           path: output/inadyn
+          
+      - name: Generate Release Info
+        run: |
+          date_str=$(date '+%Y%m%d-%H%M')
+          echo "RELEASE_TAG=asus-merlin-inadyn-${date_str}" >> $GITHUB_ENV
+          echo "RELEASE_NAME=inadyn arm64 static ${date_str}" >> $GITHUB_ENV
+          
+      - name: Publish GitHub Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          release_name: ${{ env.RELEASE_NAME }}
+          tag: ${{ env.RELEASE_TAG }}
+          overwrite: true
+          file: output/inadyn
+          asset_name: inadyn-arm64
+          body: |
+            ASUSWRT-Merlin / inadyn statically compiled for arm64.
+            
+            Build time: `${{ env.RELEASE_TAG }}`
+            
+            Compiled via GitHub Actions with:
+            `--enable-openssl --enable-reduced CFLAGS="-Os" LDFLAGS="-static -s"`
