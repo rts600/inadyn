@@ -33,6 +33,15 @@ jobs:
             
             # 静态编译 inadyn
             ./autogen.sh
+            
+            # 绕过 configure 中存在的 OpenSSL 头文件检查缺陷 (测试代码缺少 stdio.h 导致误报)
+            export ac_cv_header_openssl_crypto_h=yes
+            export ac_cv_header_openssl_x509_h=yes
+            export ac_cv_header_openssl_pem_h=yes
+            export ac_cv_header_openssl_ssl_h=yes
+            export ac_cv_header_openssl_tls1_h=yes
+            export ac_cv_header_openssl_err_h=yes
+            
             export PKG_CONFIG="pkgconf --static"
             ./configure --enable-openssl --enable-reduced CFLAGS="-Os" LDFLAGS="-static -s" PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
             make -j4 V=1
